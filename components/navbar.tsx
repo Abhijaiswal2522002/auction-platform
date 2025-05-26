@@ -76,7 +76,7 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/auctions" className="text-gray-700 hover:text-blue-600 transition-colors">
-              All Auctions
+               Auctions
             </Link>
 
             {/* Categories Dropdown */}
@@ -211,7 +211,7 @@ export default function Navbar() {
                 className="block px-3 py-2 text-gray-700 hover:text-blue-600 font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                All Auctions
+                 Auctions
               </Link>
 
               {/* Mobile Categories */}

@@ -15,12 +15,21 @@ export default function Footer() {
             <p className="text-gray-400 text-sm">
               The world's leading real-time auction platform. Discover unique items and bid with confidence.
             </p>
-            <div className="flex space-x-4">
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
-              <Instagram className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
-              <Mail className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
-            </div>
+           <div className="flex space-x-4">
+  <a href="https://www.facebook.com/yourprofile" target="_blank" rel="noopener noreferrer">
+    <Facebook className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
+  </a>
+  <a href="https://www.twitter.com/yourprofile" target="_blank" rel="noopener noreferrer">
+    <Twitter className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
+  </a>
+  <a href="https://www.instagram.com/yourprofile" target="_blank" rel="noopener noreferrer">
+    <Instagram className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
+  </a>
+  <a href="mailto:abhijaiswal2503@gmail.com">
+    <Mail className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
+  </a>
+</div>
+
           </div>
 
           {/* Quick Links */}
@@ -106,7 +115,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-          <p>&copy; 2024 AuctionHub. All rights reserved.</p>
+          <p>&copy; 2025 AuctionHub. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -1,7 +1,7 @@
-import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, User, ShoppingBag } from "lucide-react"
+import ImageGallery from "./image-gallery"
 
 interface AuctionDetailsProps {
   auction: {
@@ -9,6 +9,7 @@ interface AuctionDetailsProps {
     item: string
     description: string
     imageUrl: string
+    imageUrls?: string[]
     category: string
     seller: {
       name: string
@@ -20,19 +21,12 @@ interface AuctionDetailsProps {
 }
 
 export default function AuctionDetails({ auction }: AuctionDetailsProps) {
+  // Use imageUrls if available, otherwise fall back to single imageUrl
+  const images = auction.imageUrls && auction.imageUrls.length > 0 ? auction.imageUrls : [auction.imageUrl]
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-0">
-          <Image
-            src={auction.imageUrl || "/placeholder.svg"}
-            alt={auction.item}
-            width={600}
-            height={500}
-            className="w-full h-96 object-cover rounded-t-lg"
-          />
-        </CardContent>
-      </Card>
+      <ImageGallery images={images} title={auction.item} />
 
       <Card>
         <CardHeader>

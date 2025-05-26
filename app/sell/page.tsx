@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, DollarSign } from "lucide-react"
+import { DollarSign, Loader2, Upload } from "lucide-react"
+import ImageUpload from "@/components/image-upload"
 
 const categories = [
   "Art",
@@ -31,7 +32,10 @@ export default function SellPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [images, setImages] = useState<File[]>([])
   const [formData, setFormData] = useState({
     item: "",
     description: "",
@@ -59,10 +63,59 @@ export default function SellPage() {
     })
   }
 
+  const handleImagesChange = (newImages: File[]) => {
+    setImages(newImages)
+    console.log("Images updated:", newImages.length)
+  }
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (images.length === 0) {
+      return ["/placeholder.svg?height=400&width=600"] // Default placeholder
+    }
+
+    setIsUploadingImages(true)
+    try {
+      console.log("Starting image upload for", images.length, "files")
+
+      const formData = new FormData()
+      images.forEach((image, index) => {
+        formData.append("files", image)
+        console.log(`Added file ${index + 1}:`, image.name, image.size, "bytes")
+      })
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      console.log("Upload response status:", response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Upload error response:", errorData)
+        throw new Error(errorData.error || "Failed to upload images")
+      }
+
+      const data = await response.json()
+      console.log("Upload successful:", data)
+
+      const imageUrls = data.files.map((file: any) => file.url)
+      console.log("Image URLs:", imageUrls)
+
+      return imageUrls
+    } catch (error) {
+      console.error("Image upload error:", error)
+      throw new Error(error instanceof Error ? error.message : "Failed to upload images")
+    } finally {
+      setIsUploadingImages(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setSuccess("")
 
     if (!session) {
       setError("You must be logged in to create an auction")
@@ -70,35 +123,92 @@ export default function SellPage() {
       return
     }
 
+    // Validate required fields
+    if (!formData.item.trim()) {
+      setError("Item title is required")
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.description.trim()) {
+      setError("Item description is required")
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.category) {
+      setError("Please select a category")
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.condition) {
+      setError("Please select item condition")
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.location.trim()) {
+      setError("Item location is required")
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.startingBid || Number.parseFloat(formData.startingBid) <= 0) {
+      setError("Please enter a valid starting bid")
+      setIsLoading(false)
+      return
+    }
+
     try {
+      console.log("Starting auction creation process...")
+
+      // Upload images first
+      const imageUrls = await uploadImages()
+      console.log("Images uploaded successfully:", imageUrls)
+
       const endTime = new Date()
       endTime.setDate(endTime.getDate() + Number.parseInt(formData.duration))
+
+      const auctionData = {
+        ...formData,
+        startingBid: Number.parseFloat(formData.startingBid),
+        reservePrice: formData.reservePrice ? Number.parseFloat(formData.reservePrice) : null,
+        buyNowPrice: formData.buyNowPrice ? Number.parseFloat(formData.buyNowPrice) : null,
+        shippingCost: formData.shippingCost ? Number.parseFloat(formData.shippingCost) : 0,
+        endTime: endTime.toISOString(),
+        sellerId: session.user.id,
+        imageUrl: imageUrls[0], // Primary image
+        imageUrls: imageUrls, // All images
+      }
+
+      console.log("Creating auction with data:", auctionData)
 
       const response = await fetch("/api/auctions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          startingBid: Number.parseFloat(formData.startingBid),
-          reservePrice: formData.reservePrice ? Number.parseFloat(formData.reservePrice) : null,
-          buyNowPrice: formData.buyNowPrice ? Number.parseFloat(formData.buyNowPrice) : null,
-          shippingCost: formData.shippingCost ? Number.parseFloat(formData.shippingCost) : 0,
-          endTime: endTime.toISOString(),
-          sellerId: session.user.id,
-        }),
+        body: JSON.stringify(auctionData),
       })
+
+      console.log("Auction creation response status:", response.status)
 
       const data = await response.json()
 
       if (response.ok) {
-        router.push(`/auctions/${data._id}`)
+        console.log("Auction created successfully:", data)
+        setSuccess("Auction created successfully! Redirecting...")
+        setTimeout(() => {
+          router.push(`/auctions/${data._id}`)
+        }, 1500)
       } else {
+        console.error("Auction creation failed:", data)
         setError(data.error || "Failed to create auction")
       }
     } catch (error) {
-      setError("An error occurred. Please try again.")
+      console.error("Error in handleSubmit:", error)
+      setError(error instanceof Error ? error.message : "An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -130,6 +240,12 @@ export default function SellPage() {
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="border-green-200 bg-green-50">
+              <AlertDescription className="text-green-800">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -198,6 +314,22 @@ export default function SellPage() {
                   </Select>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Images */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Upload className="h-5 w-5 mr-2" />
+                Images
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ImageUpload onImagesChange={handleImagesChange} maxImages={10} maxSizePerImage={5} />
+              <p className="text-sm text-gray-600 mt-2">
+                Add high-quality images to attract more bidders. The first image will be the main image.
+              </p>
             </CardContent>
           </Card>
 
@@ -313,34 +445,20 @@ export default function SellPage() {
             </CardContent>
           </Card>
 
-          {/* Images */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Upload className="h-5 w-5 mr-2" />
-                Images
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Images</h3>
-                <p className="text-gray-600 mb-4">Add up to 10 high-quality images of your item</p>
-                <Button type="button" variant="outline">
-                  Choose Files
-                </Button>
-                <p className="text-xs text-gray-500 mt-2">Supported formats: JPG, PNG, GIF (max 5MB each)</p>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Submit */}
           <div className="flex justify-end space-x-4">
             <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating Auction..." : "Create Auction"}
+            <Button type="submit" disabled={isLoading || isUploadingImages} className="min-w-[140px]">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isUploadingImages ? "Uploading..." : "Creating..."}
+                </>
+              ) : (
+                "Create Auction"
+              )}
             </Button>
           </div>
         </form>
