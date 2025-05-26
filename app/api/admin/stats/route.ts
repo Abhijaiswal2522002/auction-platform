@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { database } from "@/lib/database"
 
+export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const session = await getAuthSession()

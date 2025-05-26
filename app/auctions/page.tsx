@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense } from "react"
 import AuctionGrid from "@/components/auction-grid"
 import AuctionFilters from "@/components/auction-filters"
@@ -12,9 +14,12 @@ export default function AuctionsPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-64">
-            <AuctionFilters />
-          </aside>
+        <aside className="lg:w-64">
+  <Suspense fallback={<div>Loading filters...</div>}>
+    <AuctionFilters />
+  </Suspense>
+</aside>
+
 
           <main className="flex-1">
             <Suspense
